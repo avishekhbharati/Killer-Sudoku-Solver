@@ -18,7 +18,6 @@ import java.util.Scanner;
  * your implementation).
  */
 public class StdSudokuGrid extends SudokuGrid {
-	// TODO: Add your own attributes
 	public int[][] grid;
 	public int size = 0;
 	public int[] validNumbers;
@@ -29,19 +28,25 @@ public class StdSudokuGrid extends SudokuGrid {
 
 	/* ********************************************************* */
 
+	
 	@Override
 	public void initGrid(String filename) throws FileNotFoundException, IOException {
 		File myObj = new File(filename);
 		Scanner myReader = new Scanner(myObj);
 		int lineCount = 0;
-
+		
+		//parse the contents of the file.
 		while (myReader.hasNextLine()) {
 			String data = myReader.nextLine();
-
+			
+			//process first line
 			if (lineCount == 0) {
 				size = Integer.parseInt(data);
 				grid = new int[size][size];
-			} else if (lineCount == 1) {
+			} 
+			//process second line.
+			else if (lineCount == 1) {
+				//split the content by space
 				String validNumsStr[] = data.split(" ");
 				int arrLength = validNumsStr.length;
 				validNumbers = new int[arrLength];
@@ -50,7 +55,9 @@ public class StdSudokuGrid extends SudokuGrid {
 				for (int i = 0; i < arrLength; i++) {
 					validNumbers[i] = Integer.parseInt(validNumsStr[i]);
 				}
-			} else {
+			}
+			//process rest of the line.
+			else {
 				String[] arr = data.split(" ");
 				int row = Integer.parseInt(arr[0].split(",")[0]);
 				int col = Integer.parseInt(arr[0].split(",")[1]);
@@ -68,7 +75,8 @@ public class StdSudokuGrid extends SudokuGrid {
 	public void outputGrid(String filename) throws FileNotFoundException, IOException {
 		try {
 			File myObj = new File(filename);
-
+			
+			//create file if doesn't exist.
 			if (myObj.createNewFile()) {
 				System.out.println("File created: " + myObj.getName());
 			}
@@ -85,33 +93,51 @@ public class StdSudokuGrid extends SudokuGrid {
 
 	@Override
 	public String toString() {
-		int gridLen = grid.length;
 		StringBuilder sb = new StringBuilder();
-
-		for (int i = 0; i < gridLen; i++) {
-			for (int j = 0; j < gridLen; j++) {
-				if (j == gridLen - 1)
-					sb.append(grid[i][j]);
-				else
-					sb.append(grid[i][j] + ",");
-			}
-			sb.append('\n');
+		
+		//null check
+		if (grid == null) {
+			return "";
 		}
+		
+		try {
+			//length of grid
+			int gridLen = grid.length;
+			
+			//looping in the grid to get the values of each row.
+			for (int i = 0; i < gridLen; i++) {
+				for (int j = 0; j < gridLen; j++) {
+					//doesn't append comma to last item in the row.
+					if (j == gridLen - 1)
+						sb.append(grid[i][j]);
+					else
+						sb.append(grid[i][j] + ",");
+				}
+				//add line break.
+				sb.append('\n');
+			}
+		}catch(Exception e) {
+			return "";
+		}
+		
+		//return the string representation of the grid
 		return sb.toString();
 	} // end of toString()
 
-	// might have to check if it fails for 0
+	
 	@Override
 	public boolean validate() {
 		for (int i = 0; i < size; i++) {
 			for (int j = 0; j < size; j++) {
-				if (isOkAfterInsert(i, j, grid[i][j]))
-					return true;
+				//validate each cell against its constraint.
+				if (!isOkAfterInsert(i, j, grid[i][j]))
+					return false;
 			}
 		}
-		return false;
+		return true;
 	} // end of validate()
 
+	
 	// combined methods to check the constraints after inserting a value.
 	private boolean isOkAfterInsert(int row, int col, int number) {
 		if (checkNumberIsValid(number) && isInRow(row, number) == 1 && isInCol(col, number) == 1
@@ -121,17 +147,8 @@ public class StdSudokuGrid extends SudokuGrid {
 		return false;
 	}
 
-	// combined methods to check the constarints before inserting a value
-	public boolean isOkToInsert(int row, int col, int number) {
-		if (checkNumberIsValid(number) && isInRow(row, number) == 0 && isInCol(col, number) == 0
-				&& isInBox(row, col, number) == 0) {
-			return true;
-		}
-		return false;
-	}
-
 	// checks if the given number to insert is in the list of valid numbers.
-	private boolean checkNumberIsValid(int number) {
+	public boolean checkNumberIsValid(int number) {
 
 		for (int n : validNumbers) {
 			if (n == number)
@@ -141,7 +158,7 @@ public class StdSudokuGrid extends SudokuGrid {
 	}
 
 	// check if the number is in that row
-	private int isInRow(int row, int number) {
+	public int isInRow(int row, int number) {
 		int count = 0;
 		for (int i = 0; i < size; i++) {
 			if (grid[row][i] == number)
@@ -151,7 +168,7 @@ public class StdSudokuGrid extends SudokuGrid {
 	}
 
 	// check if the number is in that column.
-	private int isInCol(int col, int number) {
+	public int isInCol(int col, int number) {
 		int count = 0;
 		for (int i = 0; i < size; i++) {
 			if (grid[i][col] == number)
@@ -161,11 +178,11 @@ public class StdSudokuGrid extends SudokuGrid {
 	}
 
 	// check if the possible number is in the box.
-	private int isInBox(int row, int col, int number) {
+	public int isInBox(int row, int col, int number) {
 		int boxSize = (int) Math.sqrt(size);
 		int r = row - row % boxSize;
 		int c = col - col % boxSize;
-
+	
 		int count = 0;
 
 		for (int i = r; i < r + boxSize; i++) {
