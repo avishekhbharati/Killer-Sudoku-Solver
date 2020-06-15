@@ -8,6 +8,7 @@ import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Scanner;
 
 /**
@@ -31,7 +32,6 @@ public class KillerSudokuGrid extends SudokuGrid {
 
 	/* ********************************************************* */
 
-	
 	@Override
 	public void initGrid(String filename) throws FileNotFoundException, IOException {
 		File myObj = new File(filename);
@@ -40,13 +40,13 @@ public class KillerSudokuGrid extends SudokuGrid {
 
 		while (myReader.hasNextLine()) {
 			String data = myReader.nextLine();
-			
-			//process first line in a file
+
+			// process first line in a file
 			if (lineCount == 0) {
 				size = Integer.parseInt(data);
 				grid = new int[size][size];
-			} 
-			//process second line in a file.
+			}
+			// process second line in a file: valid numbers.
 			else if (lineCount == 1) {
 				String validNumsStr[] = data.split(" ");
 				int arrLength = validNumsStr.length;
@@ -55,20 +55,22 @@ public class KillerSudokuGrid extends SudokuGrid {
 				for (int i = 0; i < arrLength; i++) {
 					validNumbers[i] = Integer.parseInt(validNumsStr[i]);
 				}
-			} 
-			//process third line in a file. has number of cages.
+				// sort the valid numbers.
+				Arrays.sort(validNumbers);
+			}
+			// process third line in a file. has number of cages.
 			else if (lineCount == 2) {
 				noOfCages = Integer.parseInt(data);
-			} 
-			//process the remaining lines having cage constraints.
+			}
+			// process the remaining lines having cage constraints.
 			else {
 				String[] arr = data.split(" ");
 				int arrlen = arr.length;
-				
-				//get the cage total.
+
+				// get the cage total.
 				int total = Integer.parseInt(arr[0].split(",")[0]);
 
-				//initalize CagePair
+				// initalize CagePair
 				CagePair cp = new CagePair(total);
 
 				// skip the 0th index as it has already been processed
@@ -80,14 +82,13 @@ public class KillerSudokuGrid extends SudokuGrid {
 				}
 				cagePairList.add(cp);
 			}
-			//increment the processed line in a file.
+			// increment the processed line in a file.
 			lineCount++;
 		}
 		myReader.close();
 
 	} // end of initBoard()
 
-	
 	@Override
 	public void outputGrid(String filename) throws FileNotFoundException, IOException {
 		try {
@@ -107,7 +108,6 @@ public class KillerSudokuGrid extends SudokuGrid {
 		}
 	} // end of outputBoard()
 
-	
 	@Override
 	public String toString() {
 		int gridLen = grid.length;
@@ -115,7 +115,7 @@ public class KillerSudokuGrid extends SudokuGrid {
 
 		for (int i = 0; i < gridLen; i++) {
 			for (int j = 0; j < gridLen; j++) {
-				//last column not need to attach comma.
+				// last column not need to attach comma.
 				if (j == gridLen - 1)
 					sb.append(grid[i][j]);
 				else
@@ -126,13 +126,12 @@ public class KillerSudokuGrid extends SudokuGrid {
 		return sb.toString();
 	} // end of toString()
 
-	
 	// might have to check if it fails for 0
 	@Override
 	public boolean validate() {
 		for (int i = 0; i < size; i++) {
 			for (int j = 0; j < size; j++) {
-				//validate each cell against the constraints.
+				// validate each cell against the constraints.
 				if (!isOkAfterInsert(i, j, grid[i][j]))
 					return false;
 			}
@@ -140,7 +139,6 @@ public class KillerSudokuGrid extends SudokuGrid {
 		return true;
 	} // end of validate()
 
-	
 	// combined methods to check the constraints
 	private boolean isOkAfterInsert(int row, int col, int number) {
 		if (checkNumberIsValid(number) && isInRow(row, number) == 1 && isInCol(col, number) == 1
@@ -149,7 +147,6 @@ public class KillerSudokuGrid extends SudokuGrid {
 		}
 		return false;
 	}
-
 
 	// checks if the given number to insert is in the list of valid numbers.
 	public boolean checkNumberIsValid(int number) {
@@ -161,7 +158,6 @@ public class KillerSudokuGrid extends SudokuGrid {
 		return false;
 	}
 
-	
 	// check if the number is in that row
 	public int isInRow(int row, int number) {
 		int count = 0;
@@ -172,7 +168,6 @@ public class KillerSudokuGrid extends SudokuGrid {
 		return count;
 	}
 
-	
 	// check if the number is in that column.
 	public int isInCol(int col, int number) {
 		int count = 0;
@@ -183,7 +178,6 @@ public class KillerSudokuGrid extends SudokuGrid {
 		return count;
 	}
 
-	
 	// check if the possible number is in the box.
 	public int isInBox(int row, int col, int number) {
 		int boxSize = (int) Math.sqrt(size);
@@ -202,39 +196,50 @@ public class KillerSudokuGrid extends SudokuGrid {
 		return count;
 	}
 
-	
-	// Pair class to store cages location and total
-	public static class CagePair {
-		public int total;
-		public ArrayList<Cell> cells;
+	// gets the maximum value from valid number list.
+	private int getMaxValidNumber() {
+		return validNumbers[validNumbers.length - 1];
 
-		public CagePair(int _total) {
-			this.total = _total;
-			this.cells = new ArrayList<Cell>();
-		}
-
-		public void addCell(Cell cell) {
-			cells.add(cell);
-		}
 	}
 
-	
-	// Class to store cell location. row and column
-	protected static class Cell {
-		public int row;
-		public int col;
-
-		public Cell(int _row, int _col) {
-			this.row = _row;
-			this.col = _col;
-		}
+	// gets the minimum value from the valid number list.
+	private int getMinValidNumber() {
+		return validNumbers[0];
 	}
 
-	//check if it satisfies cage constraint
+	// check if it satisfies cage constraint
 	public boolean isCagesTotalOk(int row, int col, int number) {
-		boolean isCellFound = false;
 
-		for (CagePair cagePair : cagePairList) {
+		ArrayList<CagePair> selectedCageConstraintList = new ArrayList<CagePair>();
+		int sizeOfCageConstraintList = this.cagePairList.size();
+
+		for (int l = 0; l < sizeOfCageConstraintList; l++) {
+
+			int constraintLength = this.cagePairList.get(l).size;
+
+			boolean xyFound = false;
+
+			for (int m = 0; m < constraintLength; m++) {
+
+				int posX = this.cagePairList.get(l).cells.get(m).row;
+
+				int posY = this.cagePairList.get(l).cells.get(m).col;
+				if (posX == row && posY == col) {
+					xyFound = true;
+				}
+			}
+			if (xyFound == true) {
+
+				selectedCageConstraintList.add(this.cagePairList.get(l));
+
+				break;
+
+			}
+
+		}
+
+		boolean isCellFound = false;
+		for (CagePair cagePair : selectedCageConstraintList) {
 			ArrayList<Cell> cells = cagePair.cells;
 
 			// the expected total of the cage pairs.
@@ -249,12 +254,14 @@ public class KillerSudokuGrid extends SudokuGrid {
 					cellsCurrentTotal += number;
 					isCellFound = true;
 				} else {
-					// check if any cell's value is 0.
+
+					// check if any cell's value is 0 which means partially filled.
 					int cellValue = grid[cell.row][cell.col];
 					if (cellValue == 0)
 						isCagesPartiallyFilled = true;
-
-					cellsCurrentTotal += cellValue;
+					else {
+						cellsCurrentTotal += cellValue;
+					}
 				}
 			}
 
@@ -271,4 +278,34 @@ public class KillerSudokuGrid extends SudokuGrid {
 
 		return false;
 	}
+
+	// Pair class to store cages location and total
+	public static class CagePair {
+		public int total;
+		public ArrayList<Cell> cells;
+		public int size = 0;
+
+		public CagePair(int _total) {
+			this.total = _total;
+			this.cells = new ArrayList<Cell>();
+		}
+
+		public void addCell(Cell cell) {
+			cells.add(cell);
+			size++;
+
+		}
+	}
+
+	// Class to store cell location. row and column
+	protected static class Cell {
+		public int row;
+		public int col;
+
+		public Cell(int _row, int _col) {
+			this.row = _row;
+			this.col = _col;
+		}
+	}
+
 } // end of class KillerSudokuGrid

@@ -5,12 +5,12 @@
 package solver;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
+
 import grid.StdSudokuGrid;
 import grid.SudokuGrid;
-import solver.DancingLinksSolver.DancingLinks.DancingNode;
+import solver.DancingLinksSolver.DancingLinkHelper.DancingNode;
 
 /**
  * Dancing links solver for standard Sudoku.
@@ -24,28 +24,27 @@ public class DancingLinksSolver extends StdSudokuSolver {
 	public boolean solve(SudokuGrid grid) {
 		StdSudokuGrid stdgrid = (StdSudokuGrid) grid;
 
-		//build cover matrix out of sudoku board
+		// build cover matrix out of sudoku board
 		int[][] cover = getCoverMatrix(stdgrid);
 
-		DancingLinks dlx = new DancingLinks(cover, new SudokuHandler(stdgrid.size));
+		DancingLinkHelper dlx = new DancingLinkHelper(cover, new SudokuHandler(stdgrid.size));
 
-		//run a method to solve the problem
-		dlx.runSolver();
+		// run a method to solve the problem
+		dlx.runSolver("std", grid);
 
-		//get the solved board.
+		// get the solved board.
 		int[][] answer = dlx.resolvedGrid;
 
-		//if the value in board is 0 that means it might be empty.
-		if ( answer == null || answer[0][0] == 0)
+		// if the value in board is 0 that means it might be empty.
+		if (answer == null || answer[0][0] == 0)
 			return false;
-		
+
 		stdgrid.grid = answer;
 		return true;
 	} // end of solve()
 
-
-	//Internal class
-	public class DancingLinks {
+	// Internal class
+	class DancingLinkHelper {
 
 		static final boolean verbose = true;
 
@@ -53,7 +52,16 @@ public class DancingLinksSolver extends StdSudokuSolver {
 			DancingNode L, R, U, D;
 			ColumnNode C;
 
-			// hooks node n1 `below` current node
+			// hooks node right to current node
+			DancingNode hookRight(DancingNode n1) {
+				n1.R = this.R;
+				n1.R.L = n1;
+				n1.L = this;
+				this.R = n1;
+				return n1;
+			}
+
+			// hooks down node to current node
 			DancingNode hookDown(DancingNode n1) {
 				assert (this.C == n1.C);
 				n1.D = this.D;
@@ -63,23 +71,9 @@ public class DancingLinksSolver extends StdSudokuSolver {
 				return n1;
 			}
 
-			// hooke a node n1 to the right of `this` node
-			DancingNode hookRight(DancingNode n1) {
-				n1.R = this.R;
-				n1.R.L = n1;
-				n1.L = this;
-				this.R = n1;
-				return n1;
-			}
-
 			void unlinkLR() {
 				this.L.R = this.R;
 				this.R.L = this.L;
-				updates++;
-			}
-
-			void relinkLR() {
-				this.L.R = this.R.L = this;
 				updates++;
 			}
 
@@ -91,6 +85,11 @@ public class DancingLinksSolver extends StdSudokuSolver {
 
 			void relinkUD() {
 				this.U.D = this.D.U = this;
+				updates++;
+			}
+
+			void relinkLR() {
+				this.L.R = this.R.L = this;
 				updates++;
 			}
 
@@ -145,24 +144,26 @@ public class DancingLinksSolver extends StdSudokuSolver {
 		private List<DancingNode> answer;
 		public int[][] resolvedGrid;
 
-		// Heart of the algorithm
+		// solve sudoku using recursive approach
 		private void search(int k) {
-			if (header.R == header) { // all the columns removed
-				
-				resolvedGrid =  handler.handleSolution(answer);				
-				
+			// all the columns removed
+			if (header.R == header) {
+
+				resolvedGrid = handler.handleSolution(answer);
+
 			} else {
-			
+
 				ColumnNode c = selectColumnNodeHeuristic();
 				c.cover();
 
 				for (DancingNode r = c.D; r != c; r = r.D) {
+
 					answer.add(r);
 
 					for (DancingNode j = r.R; j != r; j = j.R) {
 						j.C.cover();
 					}
-
+					// recursively call search
 					search(k + 1);
 
 					r = answer.remove(answer.size() - 1);
@@ -224,23 +225,23 @@ public class DancingLinksSolver extends StdSudokuSolver {
 			return headerNode;
 		}
 
-		public DancingLinks(int[][] grid, SudokuHandler h) {
+		public DancingLinkHelper(int[][] grid, SudokuHandler h) {
 			header = makeDLXBoard(grid);
 			handler = h;
 		}
 
-		public void runSolver() {
+		public void runSolver(String gridType, SudokuGrid grid) {
 			solutions = 0;
 			updates = 0;
 			answer = new LinkedList<DancingNode>();
 			search(0);
 		}
-
 	}
 
+	// class to handle the solved matrix.
+	class SudokuHandler {
 
-	//class to handle the solved matrix.
-	class SudokuHandler{
+		// default init
 		int size = 9;
 
 		public int[][] handleSolution(List<DancingNode> answer) {
@@ -248,10 +249,12 @@ public class DancingLinksSolver extends StdSudokuSolver {
 			return result;
 		}
 
+		// converts the Dancing nodes into 2D array.
 		private int[][] parseBoard(List<DancingNode> answer) {
 			int[][] result = new int[size][size];
 			for (DancingNode n : answer) {
 				DancingNode rcNode = n;
+
 				int min = Integer.parseInt(rcNode.C.name);
 				for (DancingNode tmp = n.R; tmp != n; tmp = tmp.R) {
 					int val = Integer.parseInt(tmp.C.name);
@@ -274,4 +277,5 @@ public class DancingLinksSolver extends StdSudokuSolver {
 			size = boardSize;
 		}
 	}
+
 } // end of class DancingLinksSolver

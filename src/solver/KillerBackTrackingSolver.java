@@ -5,26 +5,21 @@
 package solver;
 
 import grid.KillerSudokuGrid;
-import grid.StdSudokuGrid;
 import grid.SudokuGrid;
-
 
 /**
  * Backtracking solver for Killer Sudoku.
  */
-public class KillerBackTrackingSolver extends KillerSudokuSolver
-{
+public class KillerBackTrackingSolver extends KillerSudokuSolver {
 	private final int EMPTY = 0;
 
-    public KillerBackTrackingSolver() {
+	public KillerBackTrackingSolver() {
 
-    } // end of KillerBackTrackingSolver()
+	} // end of KillerBackTrackingSolver()
 
-
-    @Override
-    public boolean solve(SudokuGrid grid) {
-    	KillerSudokuGrid stdgrid = (KillerSudokuGrid) grid;
-
+	@Override
+	public boolean solve(SudokuGrid grid) {
+		KillerSudokuGrid stdgrid = (KillerSudokuGrid) grid;
 		int size = stdgrid.size;
 		int[] validNumbers = stdgrid.validNumbers;
 		int[][] board = stdgrid.grid;
@@ -37,7 +32,7 @@ public class KillerBackTrackingSolver extends KillerSudokuSolver
 						// check if the value satifies all the constraints.
 						if (isOkToInsert(row, col, number, stdgrid)) {
 							board[row][col] = number;
-
+							// call recursive method
 							if (solve(grid)) {
 								return true;
 							} else {
@@ -50,9 +45,8 @@ public class KillerBackTrackingSolver extends KillerSudokuSolver
 			}
 		}
 		return true;
-    } // end of solve()
-    
-    
+	} // end of solve()
+
 	// combined methods to check the constarints before inserting a value
 	public boolean isOkToInsert(int row, int col, int number, KillerSudokuGrid grid) {
 		if (grid.checkNumberIsValid(number) && grid.isInRow(row, number) == 0 && grid.isInCol(col, number) == 0
@@ -61,6 +55,5 @@ public class KillerBackTrackingSolver extends KillerSudokuSolver
 		}
 		return false;
 	}
-
 
 } // end of class KillerBackTrackingSolver()
